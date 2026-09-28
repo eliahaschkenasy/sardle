@@ -3,6 +3,27 @@
 
   // ---------- Data ----------
   const PLAYERS = window.PLAYERS || [];
+
+  // Ages: players with a known birthDate get their age computed live (Israel date);
+  // the rest use the age refreshed daily by .github/workflows/update-ages.yml.
+  function israelToday() {
+    const parts = Object.fromEntries(
+      new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jerusalem", year: "numeric", month: "2-digit", day: "2-digit" })
+        .formatToParts(new Date())
+        .filter((x) => x.type !== "literal")
+        .map((x) => [x.type, +x.value])
+    );
+    return parts;
+  }
+  function ageFromBirthDate(iso, today) {
+    const [y, m, d] = iso.split("-").map(Number);
+    let age = today.year - y;
+    if (today.month < m || (today.month === m && today.day < d)) age--;
+    return age;
+  }
+  const TODAY = israelToday();
+  for (const p of PLAYERS) if (p.birthDate) p.age = ageFromBirthDate(p.birthDate, TODAY);
+
   const BY_ID = new Map(PLAYERS.map((p) => [p.id, p]));
   const MAX_GUESSES = 10;
   const HINT_AT = { 1: 4, 2: 7 };
